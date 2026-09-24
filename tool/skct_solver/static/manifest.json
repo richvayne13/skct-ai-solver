@@ -1,0 +1,24 @@
+{
+  "name": "SKCT AI 실시간 고속 풀이기",
+  "short_name": "SKCT AI",
+  "description": "스마트폰 카메라로 문제를 비추면 흔들림 멈춤 감지 후 AI가 자동으로 영역을 판별하고 정답을 도출하는 초고속 풀이 앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#00ff88",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
