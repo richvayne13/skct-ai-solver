@@ -1,0 +1,12 @@
+{
+	"appId": "com.richvayne13.skctsolver",
+	"appName": "SKCT AI",
+	"webDir": "www",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"allowMixedContent": true
+	}
+}
