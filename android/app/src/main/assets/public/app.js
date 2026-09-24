@@ -333,6 +333,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (response.status === 400 && errMsg.includes("API_KEY_INVALID")) {
             throw new Error("유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 입력해주세요.");
           }
+          if (response.status === 429 || errMsg.includes("Quota exceeded") || errMsg.includes("RESOURCE_EXHAUSTED")) {
+            throw new Error("구글 무료 API 한도(프로젝트 쿼터)에 도달했습니다. Google AI Studio에서 [새 프로젝트에서 만들기]로 새 키를 발급받으시면 즉시 해결됩니다.");
+          }
         }
       } catch (e) {
         lastError = e.message;
