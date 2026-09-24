@@ -210,11 +210,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(err);
       
       const errMsg = err.message || "";
-      if (errMsg.includes("quota") || errMsg.includes("429") || errMsg.includes("ResourceExhausted") || errMsg.includes("한도")) {
+      if (errMsg.includes("quota") || errMsg.includes("429") || errMsg.includes("ResourceExhausted") || errMsg.includes("limit") || errMsg.includes("한도")) {
         alert(
-          "⚠️ Google Gemini 무료 API 사용량 한도에 도달했습니다.\n\n" +
-          "【해결 방법】\n" +
-          "Google AI Studio에서 무료 새 API 키를 발급받아 우측 상단 ⚙️ 설정에 넣으시면 즉시 한도가 리셋되어 다시 사용하실 수 있습니다!"
+          "⚠️ Google Gemini 무료 API 사용량(15회/분) 한도에 도달했습니다.\n\n" +
+          "💡 결제하실 필요가 전혀 없습니다! (100% 무료)\n\n" +
+          "【해결 방법 2가지】\n" +
+          "1. 약 1분(60초) 기다렸다가 다시 누르시면 분당 한도가 자동 리셋됩니다.\n" +
+          "2. 지금 즉시 연속으로 풀고 싶으시다면: Google AI Studio에서 [무료 새 API 키]를 만들어 ⚙️ 설정에 넣으시면 즉시 한도가 초기화됩니다!"
         );
         window.openSettingsModal();
       } else {
@@ -302,8 +304,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Priority model rotation (if 429 quota hits, automatically tries alternate model pool)
     const modelsToTry = [
       modelName || "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-2.5-flash"
+      "gemini-2.0-flash-lite",
+      "gemini-1.5-flash"
     ];
     const uniqueModels = [...new Set(modelsToTry)];
     let lastError = null;
