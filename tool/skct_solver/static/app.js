@@ -199,12 +199,34 @@ document.addEventListener("DOMContentLoaded", () => {
     return cropCanvas.toDataURL("image/jpeg", 0.90);
   }
 
-  // Show Huge Answer Overlay
+  // Helper to extract answer number
+  function extractNumber(data) {
+    if (data.number && ["1", "2", "3", "4", "5"].includes(String(data.number))) {
+      return String(data.number);
+    }
+    const text = (data.answer || "") + " " + (data.raw || "");
+    const circled = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5" };
+    for (const [c, n] of Object.entries(circled)) {
+      if (text.includes(c)) return n;
+    }
+    const match = text.match(/([1-5])\s*번/) || text.match(/([1-5])/);
+    return match ? match[1] : "4";
+  }
+
+  // Show Huge Answer Overlay with Vivid Colors
   function showAnswer(data) {
     isAnalyzing = false;
     isResultShowing = true;
 
-    resultAnswer.textContent = data.answer || "4번";
+    // Reset previous color classes
+    resultOverlay.className = "";
+
+    // Apply vivid color class based on number
+    // 1: Red, 2: Orange, 3: Yellow, 4: Green, 5: Blue
+    const num = extractNumber(data);
+    resultOverlay.classList.add(`ans-color-${num}`);
+
+    resultAnswer.textContent = data.answer || `${num}번`;
     resultReason.textContent = data.reason || "";
 
     resultOverlay.classList.remove("hidden");
@@ -216,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetToScan() {
     if (!isResultShowing) return;
     
-    resultOverlay.classList.add("hidden");
+    resultOverlay.className = "hidden";
     isResultShowing = false;
     isAnalyzing = false;
     stableCount = 0;

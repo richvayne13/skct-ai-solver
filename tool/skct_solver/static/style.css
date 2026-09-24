@@ -273,6 +273,115 @@ body, html {
   50% { opacity: 1; color: #fff; }
 }
 
+/* ========================================================
+   VIVID HIGH-CONTRAST COLOR THEMES (1~5번)
+   1번: 비비드 레드
+   2번: 비비드 오렌지
+   3번: 비비드 옐로우 (블랙 텍스트)
+   4번: 비비드 그린
+   5번: 비비드 블루
+   ======================================================== */
+
+/* 1번: 비비드 레드 */
+#result-overlay.ans-color-1 {
+  background: #FF0022 !important;
+}
+#result-overlay.ans-color-1 .huge-answer {
+  color: #FFFFFF;
+  text-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);
+}
+#result-overlay.ans-color-1 .result-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+#result-overlay.ans-color-1 .result-reason {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+#result-overlay.ans-color-1 .touch-hint {
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+}
+
+/* 2번: 비비드 오렌지 */
+#result-overlay.ans-color-2 {
+  background: #FF5A00 !important;
+}
+#result-overlay.ans-color-2 .huge-answer {
+  color: #FFFFFF;
+  text-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);
+}
+#result-overlay.ans-color-2 .result-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+#result-overlay.ans-color-2 .result-reason {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+#result-overlay.ans-color-2 .touch-hint {
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+}
+
+/* 3번: 비비드 옐로우 (최상위 시인성을 위해 블랙 텍스트) */
+#result-overlay.ans-color-3 {
+  background: #FFE600 !important;
+}
+#result-overlay.ans-color-3 .huge-answer {
+  color: #000000;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
+}
+#result-overlay.ans-color-3 .result-label {
+  color: rgba(0, 0, 0, 0.75);
+}
+#result-overlay.ans-color-3 .result-reason {
+  color: #111111;
+  font-weight: 700;
+}
+#result-overlay.ans-color-3 .touch-hint {
+  background: rgba(0, 0, 0, 0.18);
+  color: #000000;
+}
+
+/* 4번: 비비드 그린 */
+#result-overlay.ans-color-4 {
+  background: #00C814 !important;
+}
+#result-overlay.ans-color-4 .huge-answer {
+  color: #FFFFFF;
+  text-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);
+}
+#result-overlay.ans-color-4 .result-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+#result-overlay.ans-color-4 .result-reason {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+#result-overlay.ans-color-4 .touch-hint {
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+}
+
+/* 5번: 비비드 블루 */
+#result-overlay.ans-color-5 {
+  background: #0048FF !important;
+}
+#result-overlay.ans-color-5 .huge-answer {
+  color: #FFFFFF;
+  text-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);
+}
+#result-overlay.ans-color-5 .result-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+#result-overlay.ans-color-5 .result-reason {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+#result-overlay.ans-color-5 .touch-hint {
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+}
+
 /* Modal */
 #settings-modal {
   position: absolute;
