@@ -195,6 +195,27 @@ body, html {
   transition: width 0.15s ease-out;
 }
 
+/* Start Cam Prompt Overlay */
+.start-cam-prompt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 80;
+}
+.start-cam-btn {
+  background: #00ff88;
+  color: #000;
+  border: none;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 14px 24px;
+  border-radius: 30px;
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.7);
+  cursor: pointer;
+  animation: pulseInstall 1.5s infinite;
+}
+
 /* Status Pill */
 #status-pill {
   position: absolute;

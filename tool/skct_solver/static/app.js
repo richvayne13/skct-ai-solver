@@ -1,10 +1,12 @@
-// SKCT AI Auto Solver - Standalone Smartphone PWA App (Robust Edition)
+// SKCT AI Auto Solver - Standalone Smartphone PWA App (Robust Edition v4)
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("camera");
   const hiddenCanvas = document.getElementById("hidden-canvas");
   const statusPill = document.getElementById("status-pill");
   const stabilityBar = document.getElementById("stability-bar");
   const viewfinder = document.getElementById("viewfinder");
+  const startCamPrompt = document.getElementById("start-cam-prompt");
+  const startCamBtn = document.getElementById("start-cam-btn");
   
   // Results
   const resultOverlay = document.getElementById("result-overlay");
@@ -36,6 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualSnapBtn = document.getElementById("manual-snap-btn");
   const installAppBtn = document.getElementById("install-app-btn");
   const toast = document.getElementById("toast");
+
+  // Global Settings Controls for HTML onclick fallback
+  window.openSettingsModal = function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    settingsModal.classList.remove("hidden");
+  };
+  window.closeSettingsModal = function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    settingsModal.classList.add("hidden");
+  };
 
   // State variables
   let stream = null;
@@ -69,11 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateSensitivityLabel(sensitivityThreshold);
 
   modelSelect.value = currentModel;
-
-  // Register PWA Service Worker safely
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  }
 
   // PWA Install prompt handling
   window.addEventListener("beforeinstallprompt", (e) => {
@@ -132,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Multi-tier Fallback Camera Initialization
   async function initCamera() {
-    if (stream) return; // Already running
+    if (stream) return;
 
     statusPill.textContent = "📷 카메라 권한 연결 중...";
 
@@ -157,13 +164,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     ];
 
-    let lastCameraError = null;
-
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       statusPill.textContent = "⚠️ 카메라 미지원 브라우저";
-      alert("현재 브라우저에서는 카메라 접근이 제한됩니다. 모바일 Chrome 또는 Safari로 접속해주세요.");
+      alert("현재 브라우저에서는 카메라 접근이 지원되지 않습니다. Chrome 또는 Safari 브라우저에서 실행해주세요.");
       return;
     }
+
+    let lastCameraError = null;
 
     for (const constraints of constraintTiers) {
       try {
@@ -174,28 +181,33 @@ document.addEventListener("DOMContentLoaded", () => {
         video.setAttribute("autoplay", "true");
         await video.play();
 
+        // Camera started successfully
+        if (startCamPrompt) startCamPrompt.classList.add("hidden");
+        
         if (savedKey) {
           statusPill.textContent = "문제를 박스 안에 맞추세요";
         } else {
           statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
         }
         startStabilityDetection();
-        return; // Success!
+        return;
       } catch (err) {
         lastCameraError = err;
       }
     }
 
     console.error("Camera access failed all tiers:", lastCameraError);
-    statusPill.textContent = "👆 화면 터치하여 카메라 켜기";
+    statusPill.textContent = "⚠️ 아래 버튼을 눌러 카메라를 켜세요";
+    if (startCamPrompt) startCamPrompt.classList.remove("hidden");
   }
 
-  // Click on screen to trigger camera if browser blocked autoplay
-  document.body.addEventListener("click", () => {
-    if (!stream && !isResultShowing) {
+  // Button to explicitly trigger camera permission
+  if (startCamBtn) {
+    startCamBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       initCamera();
-    }
-  });
+    });
+  }
 
   // Start Stability Detection Loop
   function startStabilityDetection() {
@@ -262,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const apiKey = localStorage.getItem("gemini_api_key") || "";
     if (!apiKey) {
       showToast("우측 상단 ⚙️ 설정에서 API 키를 먼저 입력해주세요.");
-      showSettings();
+      window.openSettingsModal();
       return;
     }
 
@@ -291,10 +303,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Crop viewfinder area
   function captureViewfinderImageOnlyData() {
-    const videoW = video.videoWidth;
-    const videoH = video.videoHeight;
-    const containerW = video.clientWidth;
-    const containerH = video.clientHeight;
+    const videoW = video.videoWidth || 1280;
+    const videoH = video.videoHeight || 720;
+    const containerW = video.clientWidth || window.innerWidth;
+    const containerH = video.clientHeight || window.innerHeight;
 
     const vfRect = viewfinder.getBoundingClientRect();
 
@@ -485,13 +497,11 @@ document.addEventListener("DOMContentLoaded", () => {
     detailModal.classList.remove("hidden");
   });
 
-  closeDetailBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
+  closeDetailBtn.addEventListener("click", () => {
     detailModal.classList.add("hidden");
   });
 
-  closeDetailActionBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
+  closeDetailActionBtn.addEventListener("click", () => {
     resetToScan();
   });
 
@@ -504,31 +514,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Settings Modal Controls
-  function showSettings() {
-    settingsModal.classList.remove("hidden");
-  }
-  function hideSettings() {
-    settingsModal.classList.add("hidden");
-  }
+  settingsBtn.addEventListener("click", window.openSettingsModal);
+  closeSettingsBtn.addEventListener("click", window.closeSettingsModal);
 
-  function handleSettingsBtnClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    showSettings();
-  }
-
-  settingsBtn.addEventListener("click", handleSettingsBtnClick);
-  settingsBtn.addEventListener("touchend", handleSettingsBtnClick);
-
-  closeSettingsBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    hideSettings();
-  });
-
-  // Click outside modal content to close
   settingsModal.addEventListener("click", (e) => {
     if (e.target === settingsModal) {
-      hideSettings();
+      window.closeSettingsModal();
     }
   });
   detailModal.addEventListener("click", (e) => {
@@ -565,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     localStorage.setItem("sensitivity", sensitivitySlider.value);
-    hideSettings();
+    window.closeSettingsModal();
   });
 
   // Start Camera
