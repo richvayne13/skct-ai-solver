@@ -1,4 +1,4 @@
-// SKCT AI Auto Solver - Standalone Smartphone PWA App
+// SKCT AI Auto Solver - Standalone Smartphone PWA App (Robust Edition)
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("camera");
   const hiddenCanvas = document.getElementById("hidden-canvas");
@@ -70,14 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   modelSelect.value = currentModel;
 
-  // Prompt for API key if missing
-  if (!savedKey) {
-    setTimeout(showSettings, 600);
-  }
-
-  // Register PWA Service Worker
+  // Register PWA Service Worker safely
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(console.error);
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 
   // PWA Install prompt handling
@@ -135,31 +130,72 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast(`박스 비율: ${aspectNames[currentAspectIdx]}`);
   });
 
-  // Initialize Camera
+  // Multi-tier Fallback Camera Initialization
   async function initCamera() {
-    try {
-      statusPill.textContent = "카메라 시작 중...";
-      const constraints = {
+    if (stream) return; // Already running
+
+    statusPill.textContent = "📷 카메라 권한 연결 중...";
+
+    const constraintTiers = [
+      {
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
         audio: false
-      };
+      },
+      {
+        video: {
+          facingMode: "environment"
+        },
+        audio: false
+      },
+      {
+        video: true,
+        audio: false
+      }
+    ];
 
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
-      await video.play();
+    let lastCameraError = null;
 
-      statusPill.textContent = "문제를 박스 안에 맞추세요";
-      startStabilityDetection();
-    } catch (err) {
-      console.error("Camera access error:", err);
-      statusPill.textContent = "카메라 권한 필요";
-      alert("카메라 권한을 허용해주세요. 주소창 자물쇠 아이콘을 눌러 카메라 권한을 켤 수 있습니다.");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusPill.textContent = "⚠️ 카메라 미지원 브라우저";
+      alert("현재 브라우저에서는 카메라 접근이 제한됩니다. 모바일 Chrome 또는 Safari로 접속해주세요.");
+      return;
     }
+
+    for (const constraints of constraintTiers) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.setAttribute("playsinline", "true");
+        video.setAttribute("muted", "true");
+        video.setAttribute("autoplay", "true");
+        await video.play();
+
+        if (savedKey) {
+          statusPill.textContent = "문제를 박스 안에 맞추세요";
+        } else {
+          statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
+        }
+        startStabilityDetection();
+        return; // Success!
+      } catch (err) {
+        lastCameraError = err;
+      }
+    }
+
+    console.error("Camera access failed all tiers:", lastCameraError);
+    statusPill.textContent = "👆 화면 터치하여 카메라 켜기";
   }
+
+  // Click on screen to trigger camera if browser blocked autoplay
+  document.body.addEventListener("click", () => {
+    if (!stream && !isResultShowing) {
+      initCamera();
+    }
+  });
 
   // Start Stability Detection Loop
   function startStabilityDetection() {
@@ -210,7 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         stableCount = 0;
         stabilityBar.style.width = "0%";
-        statusPill.textContent = "문제를 비추고 멈추세요";
+        if (localStorage.getItem("gemini_api_key")) {
+          statusPill.textContent = "문제를 비추고 멈추세요";
+        } else {
+          statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
+        }
       }
     }, 150);
   }
@@ -273,27 +313,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cropCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
     const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.90);
-    return dataUrl.split(",")[1]; // Return raw base64 data
+    return dataUrl.split(",")[1];
   }
 
   // Client-side Direct Call to Google Gemini REST API
   async function solveWithGeminiDirect(base64Image, apiKey, modelName) {
-    const systemPrompt = (
-      "당신은 대한민국 최고 수준의 인적성(SKCT) 전 영역 초고속 실전 문제 풀이 전문가입니다.\n"
-      "제공된 문제 이미지를 보는 즉시 스스로 문제의 영역(창의수리, 수열추리, 자료해석, 언어추리/명제, 언어이해 등)을 '자동 판별'하고, "
-      "해당 영역의 최적 공식을 적용하여 100% 신뢰도의 정답 번호와 핵심 근거를 도출하세요.\n\n"
-      "[영역별 자동 적용 전략]\n"
-      "- 수열추리: 계차(등차/등비), 군수열(2/3개 묶음), 피보나치, 교대/건너뛰기 규칙 즉시 파악\n"
-      "- 창의수리: 소금물, 거속시, 일률, 원가·정가, 확률·경우의 수, 방정식 수립 및 빠른 계산\n"
-      "- 자료해석: 표/그래프의 행·열 단위, 각주(※) 필수 반영, 가평균 십자곱셈으로 분수 대소 비교 및 증감률 판별\n"
-      "- 언어추리/명제: 대우명제(~q -> ~p), 삼단논법, 조건추리 속성 매칭(표 배치), 진실게임 모순 검증\n"
-      "- 언어이해: 지문 핵심 주제, 사실 일치/불일치, 빈칸 어휘 문맥 추론\n\n"
-      "[출력 규격 - 사족 없이 엄수]\n"
-      "1행: 정답: [1~5]번 ([①~⑤])  (예: '정답: 4번 (④)')\n"
-      "2행: [자동판별영역] 수험생이 1초 만에 납득할 수 있는 결정적 1줄 풀이/근거 (예: '[수열추리] 계차 +3, +6, +12 등비 규칙' 또는 '[자료해석] 2023년 증가율이 35%로 가장 높음')\n"
-      "3행: [상세풀이] 단계별 풀이 요약\n\n"
-      "인사말이나 불필요한 서론/결론 문장을 일절 포함하지 마세요."
-    );
+    const systemPrompt = `당신은 대한민국 최고 수준의 인적성(SKCT) 전 영역 초고속 실전 문제 풀이 전문가입니다.
+제공된 문제 이미지를 보는 즉시 스스로 문제의 영역(창의수리, 수열추리, 자료해석, 언어추리/명제, 언어이해 등)을 '자동 판별'하고, 해당 영역의 최적 공식을 적용하여 100% 신뢰도의 정답 번호와 핵심 근거를 도출하세요.
+
+[영역별 자동 적용 전략]
+- 수열추리: 계차(등차/등비), 군수열(2/3개 묶음), 피보나치, 교대/건너뛰기 규칙 즉시 파악
+- 창의수리: 소금물, 거속시, 일률, 원가·정가, 확률·경우의 수, 방정식 수립 및 빠른 계산
+- 자료해석: 표/그래프의 행·열 단위, 각주(※) 필수 반영, 가평균 십자곱셈으로 분수 대소 비교 및 증감률 판별
+- 언어추리/명제: 대우명제(~q -> ~p), 삼단논법, 조건추리 속성 매칭(표 배치), 진실게임 모순 검증
+- 언어이해: 지문 핵심 주제, 사실 일치/불일치, 빈칸 어휘 문맥 추론
+
+[출력 규격 - 사족 없이 엄수]
+1행: 정답: [1~5]번 ([①~⑤])  (예: '정답: 4번 (④)')
+2행: [자동판별영역] 수험생이 1초 만에 납득할 수 있는 결정적 1줄 풀이/근거 (예: '[수열추리] 계차 +3, +6, +12 등비 규칙' 또는 '[자료해석] 2023년 증가율이 35%로 가장 높음')
+3행: [상세풀이] 단계별 풀이 요약
+
+인사말이나 불필요한 서론/결론 문장을 일절 포함하지 마세요.`;
 
     const payload = {
       contents: [
@@ -374,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const match = firstLine.match(/([1-5])\s*번/) || firstLine.match(/정답\s*[:：]?\s*([1-5])/) || firstLine.match(/([1-5])/);
     if (match) {
       const num = match[1];
-      const reverseMap = { "1": "①", "2": "②", "3": "③", "4": "④", "5": "⑤" };
+      const reverseMap = { "1": "①", "2": "②", "3": "③", "4": "④", "⑤": "⑤" };
       const c = reverseMap[num] || "";
       return { answer: c ? `${num}번 (${c})` : `${num}번`, number: num, reason, detail: detailLines.join("\n"), raw: text };
     }
@@ -445,11 +485,13 @@ document.addEventListener("DOMContentLoaded", () => {
     detailModal.classList.remove("hidden");
   });
 
-  closeDetailBtn.addEventListener("click", () => {
+  closeDetailBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     detailModal.classList.add("hidden");
   });
 
-  closeDetailActionBtn.addEventListener("click", () => {
+  closeDetailActionBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     resetToScan();
   });
 
@@ -461,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Settings
+  // Settings Modal Controls
   function showSettings() {
     settingsModal.classList.remove("hidden");
   }
@@ -469,11 +511,31 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsModal.classList.add("hidden");
   }
 
-  settingsBtn.addEventListener("click", (e) => {
+  function handleSettingsBtnClick(e) {
+    e.preventDefault();
     e.stopPropagation();
     showSettings();
+  }
+
+  settingsBtn.addEventListener("click", handleSettingsBtnClick);
+  settingsBtn.addEventListener("touchend", handleSettingsBtnClick);
+
+  closeSettingsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    hideSettings();
   });
-  closeSettingsBtn.addEventListener("click", hideSettings);
+
+  // Click outside modal content to close
+  settingsModal.addEventListener("click", (e) => {
+    if (e.target === settingsModal) {
+      hideSettings();
+    }
+  });
+  detailModal.addEventListener("click", (e) => {
+    if (e.target === detailModal) {
+      detailModal.classList.add("hidden");
+    }
+  });
 
   sensitivitySlider.addEventListener("input", (e) => {
     const val = parseInt(e.target.value, 10);
@@ -487,7 +549,8 @@ document.addEventListener("DOMContentLoaded", () => {
     else sensitivityVal.textContent = `느슨함 (${val}) - 약간 흔들려도 인식`;
   }
 
-  saveSettingsBtn.addEventListener("click", () => {
+  saveSettingsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     const key = apiKeyInput.value.trim();
     const selModel = modelSelect.value;
     currentModel = selModel;
@@ -495,13 +558,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (key) {
       localStorage.setItem("gemini_api_key", key);
+      showToast("⚙️ API 키가 안전하게 저장되었습니다!");
+      if (stream) {
+        statusPill.textContent = "문제를 박스 안에 맞추세요";
+      }
     }
 
     localStorage.setItem("sensitivity", sensitivitySlider.value);
-    showToast("⚙️ 설정이 안전하게 저장되었습니다.");
     hideSettings();
   });
 
-  // Start app
+  // Start Camera
   initCamera();
 });

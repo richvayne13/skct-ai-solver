@@ -52,7 +52,8 @@ body, html {
   justify-content: space-between;
   align-items: center;
   padding: 0 16px;
-  z-index: 15;
+  z-index: 100;
+  pointer-events: auto;
 }
 
 .logo {
@@ -70,6 +71,7 @@ body, html {
 .top-actions {
   display: flex;
   gap: 8px;
+  pointer-events: auto;
 }
 
 .icon-btn {
@@ -78,13 +80,15 @@ body, html {
   color: #fff;
   font-size: 13px;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
   backdrop-filter: blur(4px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:active {
   transform: scale(0.95);
