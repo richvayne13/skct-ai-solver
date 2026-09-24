@@ -47,10 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let stream = null;
   let isAnalyzing = false;
   let isResultShowing = false;
-  let currentModel = localStorage.getItem("skct_model") || "gemini-2.0-flash";
-  if (!["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"].includes(currentModel)) {
-    currentModel = "gemini-2.0-flash";
-    localStorage.setItem("skct_model", "gemini-2.0-flash");
+  let currentModel = localStorage.getItem("skct_model") || "gemini-3.5-flash-lite";
+  if (!["gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"].includes(currentModel)) {
+    currentModel = "gemini-3.5-flash-lite";
+    localStorage.setItem("skct_model", "gemini-3.5-flash-lite");
   }
 
   let lastSolvedData = null;
@@ -305,10 +305,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
 
-    // Priority model rotation (NO deprecated 1.5-flash)
-    const validCandidates = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
-    const chosen = validCandidates.includes(modelName) ? modelName : "gemini-2.0-flash";
-    const modelsToTry = [chosen, "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+    // Priority model rotation (Active 2026 Models: gemini-3.5-flash-lite & gemini-2.5-flash)
+    const validCandidates = ["gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"];
+    const chosen = validCandidates.includes(modelName) ? modelName : "gemini-3.5-flash-lite";
+    const modelsToTry = [chosen, "gemini-3.5-flash-lite", "gemini-2.5-flash"];
     const uniqueModels = [...new Set(modelsToTry)];
     
     let primaryError = null;
