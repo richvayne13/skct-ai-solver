@@ -48,6 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let isAnalyzing = false;
   let isResultShowing = false;
   let currentModel = localStorage.getItem("skct_model") || "gemini-2.0-flash";
+  if (!["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"].includes(currentModel)) {
+    currentModel = "gemini-2.0-flash";
+    localStorage.setItem("skct_model", "gemini-2.0-flash");
+  }
 
   let lastSolvedData = null;
   let wakeLock = null;
@@ -287,8 +291,8 @@ document.addEventListener("DOMContentLoaded", () => {
           parts: [
             { text: systemPrompt },
             {
-              inline_data: {
-                mime_type: "image/jpeg",
+              inlineData: {
+                mimeType: "image/jpeg",
                 data: base64Image
               }
             }
@@ -301,13 +305,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
 
-    // Priority model rotation (if 429 quota hits, automatically tries alternate model pool)
-    const modelsToTry = [
-      modelName || "gemini-2.0-flash",
-      "gemini-2.0-flash-lite",
-      "gemini-1.5-flash"
-    ];
+    // Priority model rotation (NO deprecated 1.5-flash)
+    const validCandidates = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+    const chosen = validCandidates.includes(modelName) ? modelName : "gemini-2.0-flash";
+    const modelsToTry = [chosen, "gemini-2.5-flash", "gemini-2.0-flash-lite"];
     const uniqueModels = [...new Set(modelsToTry)];
+    
+    let primaryError = null;
     let lastError = null;
 
     for (const m of uniqueModels) {
@@ -329,6 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const errData = await response.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${response.status}`;
           lastError = errMsg;
+          if (!primaryError) primaryError = errMsg;
           console.warn(`Model ${m} failed (${response.status}): ${errMsg}`);
           if (response.status === 400 && errMsg.includes("API_KEY_INVALID")) {
             throw new Error("유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 입력해주세요.");
@@ -339,11 +344,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } catch (e) {
         lastError = e.message;
-        if (e.message.includes("유효하지 않은 API 키")) throw e;
+        if (!primaryError) primaryError = e.message;
+        if (e.message.includes("유효하지 않은 API 키") || e.message.includes("구글 무료 API 한도")) throw e;
       }
     }
 
-    throw new Error(lastError || "Gemini API 응답 실패");
+    throw new Error(primaryError || lastError || "Gemini API 응답 실패");
   }
 
   // Client answer parser
