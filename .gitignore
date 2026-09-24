@@ -15,8 +15,11 @@ venv/
 env/
 .venv/
 
-# IDE & OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# Node & Android Build
+node_modules/
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+*.aab
+release-apk/
