@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SKCT AI Auto Solver</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Camera Viewport -->
+    <div id="camera-container">
+      <video id="camera" autoplay playsinline muted></video>
+      <canvas id="hidden-canvas" style="display: none;"></canvas>
+
+      <!-- Viewfinder Overlay -->
+      <div id="viewfinder">
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+        <div class="scan-laser"></div>
+        <div class="guide-text">문제를 박스 안에 맞추고 1초간 멈추세요</div>
+      </div>
+
+      <!-- Stability Progress Bar -->
+      <div id="stability-bar-container">
+        <div id="stability-bar"></div>
+      </div>
+
+      <!-- Status Indicator -->
+      <div id="status-pill">카메라 대기 중...</div>
+
+      <!-- Top Control Bar -->
+      <div id="top-bar">
+        <div class="logo">⚡ SKCT SOLVER</div>
+        <button id="settings-btn" aria-label="설정">⚙️</button>
+      </div>
+
+      <!-- Manual capture button (just in case) -->
+      <button id="manual-snap-btn" title="터치로 즉시 인식">📸</button>
+    </div>
+
+    <!-- Huge Answer Overlay -->
+    <div id="result-overlay" class="hidden">
+      <div class="result-card">
+        <div class="result-label">정답</div>
+        <div id="result-answer" class="huge-answer">4번</div>
+        <div id="result-reason" class="result-reason">전제1 대우와 전제2 연결 성립</div>
+        <div class="touch-hint">👉 화면 아무 곳이나 터치하면 다음 문제</div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden">
+      <div class="modal-content">
+        <h3>⚙️ 설정</h3>
+        <div class="form-group">
+          <label for="api-key-input">Gemini API Key (무료 발급)</label>
+          <input type="password" id="api-key-input" placeholder="AI Studio에서 발급받은 API 키 입력">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-btn">
+            🔗 10초 만에 무료 API 키 받기 (Google AI Studio)
+          </a>
+        </div>
+        <div class="form-group">
+          <label for="sensitivity-slider">인식 안정도 감도 (흔들림 감지)</label>
+          <input type="range" id="sensitivity-slider" min="5" max="30" value="15">
+          <span id="sensitivity-val">보통 (15)</span>
+        </div>
+        <div class="modal-actions">
+          <button id="save-settings-btn" class="btn primary">저장 및 닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
