@@ -1,9 +1,9 @@
-// SKCT AI Auto Solver - Fullscreen 100% & Smart Quota Guard v5
+// SKCT AI Auto Solver - Pure On-Demand Button Trigger v6
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("camera");
   const hiddenCanvas = document.getElementById("hidden-canvas");
   const statusPill = document.getElementById("status-pill");
-  const stabilityBar = document.getElementById("stability-bar");
+  const snapSolveBtn = document.getElementById("snap-solve-btn");
   const startCamPrompt = document.getElementById("start-cam-prompt");
   const startCamBtn = document.getElementById("start-cam-btn");
   
@@ -29,12 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveSettingsBtn = document.getElementById("save-settings-btn");
   const apiKeyInput = document.getElementById("api-key-input");
   const modelSelect = document.getElementById("model-select");
-  const sensitivitySlider = document.getElementById("sensitivity-slider");
-  const sensitivityVal = document.getElementById("sensitivity-val");
 
-  const modeToggleBtn = document.getElementById("mode-toggle-btn");
-  const modeLabel = document.getElementById("mode-label");
-  const manualSnapBtn = document.getElementById("manual-snap-btn");
   const installAppBtn = document.getElementById("install-app-btn");
   const toast = document.getElementById("toast");
 
@@ -52,59 +47,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let stream = null;
   let isAnalyzing = false;
   let isResultShowing = false;
-  let isCooldown = false;
-  let isAutoMode = localStorage.getItem("skct_mode") !== "manual"; // Default: true (Auto)
   let currentModel = localStorage.getItem("skct_model") || "gemini-2.0-flash";
 
   let lastSolvedData = null;
   let wakeLock = null;
   let deferredInstallPrompt = null;
 
-  // Stability detection variables (150ms intervals)
-  const sampleWidth = 64;
-  const sampleHeight = 48;
-  let prevFrameData = null;
-  let stableCount = 0;
-  const requiredStableChecks = 9; // ~1.35s stillness required (prevents rapid firing)
-  let sensitivityThreshold = 14;
-  let stabilityInterval = null;
-
   // Load Saved Settings
   const savedKey = localStorage.getItem("gemini_api_key") || "";
   apiKeyInput.value = savedKey;
-
-  const savedSens = localStorage.getItem("sensitivity") || "14";
-  sensitivitySlider.value = savedSens;
-  sensitivityThreshold = parseInt(savedSens, 10);
-  updateSensitivityLabel(sensitivityThreshold);
-
   modelSelect.value = currentModel;
-  updateModeUI();
-
-  // Mode Toggle (Auto / Manual)
-  modeToggleBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    isAutoMode = !isAutoMode;
-    localStorage.setItem("skct_mode", isAutoMode ? "auto" : "manual");
-    updateModeUI();
-    showToast(isAutoMode ? "⚡ 자동 감지 모드: 1.3초 멈추면 풀이" : "📸 수동 셔터 모드: 셔터 버튼 누르면 풀이");
-  });
-
-  function updateModeUI() {
-    if (isAutoMode) {
-      modeLabel.textContent = "자동";
-      modeToggleBtn.style.color = "#00ff88";
-      modeToggleBtn.style.borderColor = "rgba(0, 255, 136, 0.4)";
-      manualSnapBtn.textContent = "📸 셔터 (수동)";
-    } else {
-      modeLabel.textContent = "수동";
-      modeToggleBtn.style.color = "#ffbb00";
-      modeToggleBtn.style.borderColor = "rgba(255, 187, 0, 0.5)";
-      manualSnapBtn.textContent = "📸 지금 풀기";
-      stabilityBar.style.width = "0%";
-      statusPill.textContent = "문제를 비추고 [📸 지금 풀기]를 누르세요";
-    }
-  }
 
   // PWA Install prompt handling
   window.addEventListener("beforeinstallprompt", (e) => {
@@ -156,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function initCamera() {
     if (stream) return;
 
-    statusPill.textContent = "📷 카메라 권한 연결 중...";
+    statusPill.textContent = "📷 카메라 연결 중...";
 
     const constraintTiers = [
       {
@@ -199,11 +151,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (startCamPrompt) startCamPrompt.classList.add("hidden");
         
         if (savedKey) {
-          statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
+          statusPill.textContent = "문제를 화면에 비추고 아래 [풀기] 버튼을 누르세요";
         } else {
-          statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
+          statusPill.textContent = "⚙️ 우측 상단에서 API 키를 먼저 입력하세요";
         }
-        startStabilityDetection();
         return;
       } catch (err) {
         lastCameraError = err;
@@ -222,69 +173,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Stability Detection Loop
-  function startStabilityDetection() {
-    if (stabilityInterval) clearInterval(stabilityInterval);
-    
-    hiddenCanvas.width = sampleWidth;
-    hiddenCanvas.height = sampleHeight;
-    const ctx = hiddenCanvas.getContext("2d", { willReadFrequently: true });
+  // ON-DEMAND BUTTON TRIGGER: 오직 버튼을 눌렀을 때만 캡처 및 AI 호출! (API 낭비 0%)
+  snapSolveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (isAnalyzing || isResultShowing) return;
+    triggerCapture();
+  });
 
-    stabilityInterval = setInterval(() => {
-      // Don't auto-capture if manual mode, cooldown, analyzing, result showing, or camera not ready
-      if (!isAutoMode || isCooldown || isAnalyzing || isResultShowing || !video.videoWidth) {
-        return;
-      }
-
-      ctx.drawImage(video, 0, 0, sampleWidth, sampleHeight);
-      const frameData = ctx.getImageData(0, 0, sampleWidth, sampleHeight).data;
-
-      if (!prevFrameData) {
-        prevFrameData = frameData;
-        return;
-      }
-
-      // Compute mean pixel difference (motion level)
-      let totalDiff = 0;
-      const step = 4; // RGBA
-      const numPixels = (sampleWidth * sampleHeight);
-
-      for (let i = 0; i < frameData.length; i += step) {
-        const rDiff = Math.abs(frameData[i] - prevFrameData[i]);
-        const gDiff = Math.abs(frameData[i+1] - prevFrameData[i+1]);
-        const bDiff = Math.abs(frameData[i+2] - prevFrameData[i+2]);
-        totalDiff += (rDiff + gDiff + bDiff) / 3;
-      }
-
-      const avgDiff = totalDiff / numPixels;
-      prevFrameData = frameData;
-
-      // Check if phone is holding still
-      if (avgDiff < sensitivityThreshold) {
-        stableCount++;
-        const progress = Math.min(100, Math.round((stableCount / requiredStableChecks) * 100));
-        stabilityBar.style.width = `${progress}%`;
-        statusPill.textContent = `화면 고정 중... (${progress}%)`;
-
-        if (stableCount >= requiredStableChecks) {
-          triggerCapture();
-        }
-      } else {
-        stableCount = 0;
-        stabilityBar.style.width = "0%";
-        if (localStorage.getItem("gemini_api_key")) {
-          statusPill.textContent = "문제를 화면에 비추고 멈추세요";
-        } else {
-          statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
-        }
-      }
-    }, 150);
-  }
-
-  // Trigger Image Capture & Direct AI Solve
   async function triggerCapture() {
-    if (isAnalyzing || isResultShowing || isCooldown) return;
-    
     const apiKey = localStorage.getItem("gemini_api_key") || "";
     if (!apiKey) {
       showToast("우측 상단 ⚙️ 설정에서 API 키를 먼저 입력해주세요.");
@@ -292,12 +188,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    isAnalyzing = true;
-    stableCount = 0;
-    stabilityBar.style.width = "100%";
-    statusPill.textContent = "⚡ AI 영역 자동 판별 및 풀이 중...";
+    if (!video.videoWidth) {
+      showToast("카메라가 아직 준비되지 않았습니다.");
+      initCamera();
+      return;
+    }
 
-    if (navigator.vibrate) navigator.vibrate(50);
+    isAnalyzing = true;
+    snapSolveBtn.disabled = true;
+    snapSolveBtn.innerHTML = '<span class="btn-icon">⏳</span> AI 분석 중...';
+    statusPill.textContent = "⚡ AI 영역 자동 판별 및 문제 풀이 중...";
+
+    if (navigator.vibrate) navigator.vibrate(60);
 
     try {
       const base64Data = captureFullscreenImageOnlyData();
@@ -307,37 +209,32 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       
-      let userErrMsg = err.message || "";
-      if (userErrMsg.includes("quota") || userErrMsg.includes("429") || userErrMsg.includes("ResourceExhausted")) {
-        userErrMsg = "⏳ Google Gemini 무료 호출 한도(분당 15회)에 일시 도달했습니다.\n약 20초만 쉬었다가 다시 시도해 주세요.";
+      const errMsg = err.message || "";
+      if (errMsg.includes("quota") || errMsg.includes("429") || errMsg.includes("ResourceExhausted") || errMsg.includes("한도")) {
+        alert(
+          "⚠️ Google Gemini 무료 API 사용량 한도에 도달했습니다.\n\n" +
+          "【해결 방법】\n" +
+          "Google AI Studio에서 무료 새 API 키를 발급받아 우측 상단 ⚙️ 설정에 넣으시면 즉시 한도가 리셋되어 다시 사용하실 수 있습니다!"
+        );
+        window.openSettingsModal();
+      } else {
+        alert("AI 풀이 오류: " + errMsg);
       }
-      
-      statusPill.textContent = "⚠️ 풀이 중단 (2초 후 리셋)";
-      alert(userErrMsg);
 
-      // Start 4-second cooldown to protect rate limits
-      startCooldown(4000);
-      setTimeout(() => {
-        isAnalyzing = false;
-        resetToScan();
-      }, 2000);
+      statusPill.textContent = "문제를 화면에 비추고 아래 [풀기] 버튼을 누르세요";
+    } finally {
+      isAnalyzing = false;
+      snapSolveBtn.disabled = false;
+      snapSolveBtn.innerHTML = '<span class="btn-icon">⚡</span> AI로 이 문제 풀기';
     }
   }
 
-  // Cooldown Manager (prevents API spamming)
-  function startCooldown(durationMs = 3000) {
-    isCooldown = true;
-    setTimeout(() => {
-      isCooldown = false;
-    }, durationMs);
-  }
-
-  // 100% Fullscreen Camera Capture (가로/세로 박스 잘림 없이 화면 전체 통째로 캡처)
+  // 100% Fullscreen Camera Capture (가로/세로 잘림 없이 화면 전체 통째로 캡처)
   function captureFullscreenImageOnlyData() {
     const videoW = video.videoWidth || 1280;
     const videoH = video.videoHeight || 720;
 
-    // Optimal resizing (Max 1280px to save token quota and 2x speed)
+    // Resizing (Max 1280px to save token quota and 2x speed)
     const maxDim = 1280;
     let targetW = videoW;
     let targetH = videoH;
@@ -405,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Priority model rotation (if 429 quota hits, automatically tries alternate model pool)
     const modelsToTry = [
       modelName || "gemini-2.0-flash",
-      "gemini-1.5-flash", // Separate quota bucket from 2.0!
+      "gemini-1.5-flash",
       "gemini-2.5-flash"
     ];
     const uniqueModels = [...new Set(modelsToTry)];
@@ -430,8 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const errData = await response.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${response.status}`;
           lastError = errMsg;
-          console.warn(`Model ${m} failed (${response.status}): ${errMsg}, trying next fallback...`);
-          // If it's not quota error (e.g. invalid API key), don't loop endlessly
+          console.warn(`Model ${m} failed (${response.status}): ${errMsg}`);
           if (response.status === 400 && errMsg.includes("API_KEY_INVALID")) {
             throw new Error("유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 입력해주세요.");
           }
@@ -515,19 +411,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // One-touch reset to scan next question
   function resetToScan() {
-    if (!isResultShowing && !isAnalyzing) return;
+    if (!isResultShowing) return;
     
     resultOverlay.className = "hidden";
     detailModal.classList.add("hidden");
     isResultShowing = false;
     isAnalyzing = false;
-    stableCount = 0;
-    stabilityBar.style.width = "0%";
 
-    // Start 2.5s cooldown after closing result to prevent accidental instant re-trigger
-    startCooldown(2500);
-
-    statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
+    statusPill.textContent = "문제를 화면에 비추고 아래 [풀기] 버튼을 누르세요";
 
     if (navigator.vibrate) navigator.vibrate(30);
   }
@@ -556,14 +447,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resetToScan();
   });
 
-  // Manual snap button (Always functional)
-  manualSnapBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!isAnalyzing && !isResultShowing) {
-      triggerCapture();
-    }
-  });
-
   // Settings Modal Controls
   settingsBtn.addEventListener("click", window.openSettingsModal);
   closeSettingsBtn.addEventListener("click", window.closeSettingsModal);
@@ -579,18 +462,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  sensitivitySlider.addEventListener("input", (e) => {
-    const val = parseInt(e.target.value, 10);
-    sensitivityThreshold = val;
-    updateSensitivityLabel(val);
-  });
-
-  function updateSensitivityLabel(val) {
-    if (val < 10) sensitivityVal.textContent = `매우 민감 (${val}) - 완전 정지 필요`;
-    else if (val <= 18) sensitivityVal.textContent = `보통 (${val}) - 추천 설정`;
-    else sensitivityVal.textContent = `느슨함 (${val}) - 약간 흔들려도 인식`;
-  }
-
   saveSettingsBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     const key = apiKeyInput.value.trim();
@@ -602,11 +473,10 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("gemini_api_key", key);
       showToast("⚙️ API 키가 안전하게 저장되었습니다!");
       if (stream) {
-        statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
+        statusPill.textContent = "문제를 화면에 비추고 아래 [풀기] 버튼을 누르세요";
       }
     }
 
-    localStorage.setItem("sensitivity", sensitivitySlider.value);
     window.closeSettingsModal();
   });
 

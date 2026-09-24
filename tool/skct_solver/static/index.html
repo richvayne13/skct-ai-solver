@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
 
-  <!-- Force Cache Clear & Service Worker Unregister -->
+  <!-- Force Cache Clear -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -28,46 +28,38 @@
         for (var i = 0; i < names.length; i++) caches.delete(names[i]);
       });
     }
-
-    // Global Mobile Error Banner
     window.onerror = function(msg, url, line) {
       var eb = document.getElementById('error-banner');
       if (eb) {
         eb.style.display = 'block';
-        eb.textContent = '⚠️ 오류: ' + msg + ' (L' + line + ')';
+        eb.textContent = '⚠️ ' + msg;
       }
       return false;
     };
   </script>
 
-  <link rel="stylesheet" href="style.css?v=20260924_5">
+  <link rel="stylesheet" href="style.css?v=20260924_6">
 </head>
 <body>
   <div id="app">
-    <!-- On-screen Error Banner for Mobile Debugging -->
+    <!-- On-screen Error Banner -->
     <div id="error-banner" style="display:none; position:fixed; top:0; left:0; right:0; background:#ff0033; color:#fff; font-size:12px; font-weight:bold; padding:8px 12px; z-index:9999; word-break:break-all;"></div>
 
-    <!-- Camera Viewport -->
+    <!-- Camera Viewport (100% Fullscreen) -->
     <div id="camera-container">
       <video id="camera" autoplay playsinline muted></video>
       <canvas id="hidden-canvas" style="display: none;"></canvas>
 
-      <!-- Fullscreen Neon Target Frame (전체화면 풀 프레임) -->
+      <!-- Clean Corner Target Marks -->
       <div id="fullscreen-frame">
         <div class="corner top-left"></div>
         <div class="corner top-right"></div>
         <div class="corner bottom-left"></div>
         <div class="corner bottom-right"></div>
-        <div class="scan-laser"></div>
-      </div>
-
-      <!-- Stability Progress Bar -->
-      <div id="stability-bar-container">
-        <div id="stability-bar"></div>
       </div>
 
       <!-- Status Indicator -->
-      <div id="status-pill">📷 카메라 준비 중...</div>
+      <div id="status-pill">문제를 화면에 비추고 아래 버튼을 누르세요</div>
 
       <!-- Camera Start Touch Overlay -->
       <div id="start-cam-prompt" class="start-cam-prompt hidden">
@@ -79,13 +71,14 @@
         <div class="logo">⚡ SKCT AI</div>
         <div class="top-actions">
           <button id="install-app-btn" class="icon-btn install hidden" title="홈 화면에 앱 설치">📲 앱 설치</button>
-          <button id="mode-toggle-btn" class="icon-btn" title="자동/수동 캡처 전환">⚡ <span id="mode-label">자동</span></button>
-          <button id="settings-btn" class="icon-btn" title="설정" onclick="window.openSettingsModal && window.openSettingsModal(event)">⚙️</button>
+          <button id="settings-btn" class="icon-btn" title="설정" onclick="window.openSettingsModal && window.openSettingsModal(event)">⚙️ 설정</button>
         </div>
       </div>
 
-      <!-- Manual capture button (수동 캡처 / 즉시 캡처) -->
-      <button id="manual-snap-btn" title="터치로 즉시 문제 풀기">📸 셔터</button>
+      <!-- Big Button: Only Solves When Clicked (API 낭비 0%) -->
+      <button id="snap-solve-btn" class="snap-solve-btn">
+        <span class="btn-icon">⚡</span> AI로 이 문제 풀기
+      </button>
     </div>
 
     <!-- Huge Answer Overlay -->
@@ -125,7 +118,7 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button id="close-detail-action-btn" class="btn primary">닫기 및 다음 문제 풀이</button>
+          <button id="close-detail-action-btn" class="btn primary">닫기 및 다음 문제 풀기</button>
         </div>
       </div>
     </div>
@@ -140,8 +133,11 @@
         <div class="form-group">
           <label for="api-key-input">Google Gemini API Key (무료)</label>
           <input type="password" id="api-key-input" placeholder="Google AI Studio에서 발급받은 무료 키 입력">
+          <div class="quota-tip">
+            💡 <strong>무료 쿼터 초과 시</strong>: 아래 링크에서 새 무료 키를 10초 만에 만들어 넣으시면 즉시 한도가 리셋됩니다!
+          </div>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-btn">
-            🔗 10초 만에 무료 API 키 받기 (Google AI Studio)
+            🔗 무료 새 API 키 만들기 (Google AI Studio)
           </a>
         </div>
         <div class="form-group">
@@ -151,11 +147,6 @@
             <option value="gemini-1.5-flash">gemini-1.5-flash (안정적 쿼터 모드)</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash (추론 고도화 모드)</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label for="sensitivity-slider">흔들림 멈춤 감도 (정지 인식)</label>
-          <input type="range" id="sensitivity-slider" min="5" max="30" value="15">
-          <span id="sensitivity-val">보통 (15)</span>
         </div>
         <div class="modal-actions">
           <button id="save-settings-btn" class="btn primary">저장 및 시작</button>
@@ -167,6 +158,6 @@
     <div id="toast" class="toast hidden"></div>
   </div>
 
-  <script src="app.js?v=20260924_5"></script>
+  <script src="app.js?v=20260924_6"></script>
 </body>
 </html>

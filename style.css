@@ -106,20 +106,18 @@ body, html {
   50% { transform: scale(1.05); }
 }
 
-/* Fullscreen Target Frame (전체화면 프레임 - 가리는 마스크 없음) */
+/* Fullscreen Frame Corners (시야를 절대 가리지 않는 심플 코너 마크) */
 #fullscreen-frame {
   position: absolute;
-  top: 60px;
-  bottom: 80px;
+  top: 55px;
+  bottom: 95px;
   left: 12px;
   right: 12px;
   border-radius: 16px;
-  border: 1.5px dashed rgba(0, 255, 136, 0.35);
   pointer-events: none;
   z-index: 5;
 }
 
-/* Corner Brackets */
 .corner {
   position: absolute;
   width: 26px;
@@ -127,50 +125,61 @@ body, html {
   border-color: #00ff88;
   border-style: solid;
 }
-.corner.top-left { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 14px; }
-.corner.top-right { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 14px; }
-.corner.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 14px; }
-.corner.bottom-right { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 14px; }
+.corner.top-left { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 14px; }
+.corner.top-right { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 14px; }
+.corner.bottom-left { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 14px; }
+.corner.bottom-right { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 14px; }
 
-/* Laser Scanning Line */
-.scan-laser {
+/* Status Pill */
+#status-pill {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  box-shadow: 0 0 10px #00ff88;
-  opacity: 0.6;
-  animation: scanning 2.2s infinite ease-in-out;
-}
-
-@keyframes scanning {
-  0% { top: 5%; opacity: 0.2; }
-  50% { top: 95%; opacity: 0.85; }
-  100% { top: 5%; opacity: 0.2; }
-}
-
-/* Stability Progress Bar */
-#stability-bar-container {
-  position: absolute;
-  bottom: 78px;
+  bottom: 85px;
   left: 50%;
   transform: translateX(-50%);
-  width: 220px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  overflow: hidden;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00ff88;
+  letter-spacing: 0.5px;
   z-index: 10;
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
 }
 
-#stability-bar {
-  width: 0%;
-  height: 100%;
-  background: #00ff88;
-  box-shadow: 0 0 10px #00ff88;
-  transition: width 0.15s ease-out;
+/* MAIN ACTION BUTTON: 누를 때만 문제 풀기 (API 낭비 0%) */
+.snap-solve-btn {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 86%;
+  max-width: 360px;
+  height: 54px;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  color: #000;
+  border: 2px solid #fff;
+  border-radius: 28px;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.5);
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.snap-solve-btn:active {
+  transform: translateX(-50%) scale(0.95);
+  box-shadow: 0 2px 10px rgba(0, 255, 136, 0.3);
+}
+.snap-solve-btn .btn-icon {
+  font-size: 20px;
 }
 
 /* Start Cam Prompt Overlay */
@@ -193,52 +202,6 @@ body, html {
   cursor: pointer;
   animation: pulseInstall 1.5s infinite;
   touch-action: manipulation;
-}
-
-/* Status Pill */
-#status-pill {
-  position: absolute;
-  bottom: 95px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.85);
-  padding: 6px 18px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff88;
-  letter-spacing: 0.5px;
-  z-index: 10;
-  border: 1px solid rgba(0, 255, 136, 0.4);
-  backdrop-filter: blur(6px);
-  white-space: nowrap;
-}
-
-/* Manual Snap Button */
-#manual-snap-btn {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #00ff88;
-  color: #000;
-  border: 2px solid #fff;
-  padding: 10px 24px;
-  border-radius: 25px;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-  touch-action: manipulation;
-  transition: transform 0.1s;
-}
-#manual-snap-btn:active {
-  transform: translateX(-50%) scale(0.94);
 }
 
 /* HUGE ANSWER OVERLAY */
@@ -492,21 +455,25 @@ body, html {
 .form-select:focus {
   border-color: #00ff88;
 }
+
+.quota-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ffbb00;
+  line-height: 1.4;
+  background: rgba(255, 187, 0, 0.1);
+  border: 1px solid rgba(255, 187, 0, 0.3);
+  padding: 8px;
+  border-radius: 6px;
+}
+
 .link-btn {
   display: inline-block;
   margin-top: 6px;
   font-size: 12px;
   color: #00ff88;
   text-decoration: none;
-  font-weight: 600;
-}
-.form-group input[type="range"] {
-  width: 100%;
-  margin: 8px 0;
-}
-#sensitivity-val {
-  font-size: 12px;
-  color: #00ff88;
+  font-weight: 700;
 }
 
 .modal-actions {
