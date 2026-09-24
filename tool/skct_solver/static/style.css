@@ -23,7 +23,7 @@ body, html {
   background: #000;
 }
 
-/* Camera Viewport */
+/* Camera Viewport - Fullscreen 100% */
 #camera-container {
   position: relative;
   width: 100%;
@@ -60,10 +60,10 @@ body, html {
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 1px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(0, 255, 136, 0.35);
+  border: 1px solid rgba(0, 255, 136, 0.4);
   color: #00ff88;
   backdrop-filter: blur(4px);
 }
@@ -75,8 +75,8 @@ body, html {
 }
 
 .icon-btn {
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -106,41 +106,31 @@ body, html {
   50% { transform: scale(1.05); }
 }
 
-/* Viewfinder */
-#viewfinder {
-  position: relative;
-  border-radius: 14px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+/* Fullscreen Target Frame (전체화면 프레임 - 가리는 마스크 없음) */
+#fullscreen-frame {
+  position: absolute;
+  top: 60px;
+  bottom: 80px;
+  left: 12px;
+  right: 12px;
+  border-radius: 16px;
+  border: 1.5px dashed rgba(0, 255, 136, 0.35);
   pointer-events: none;
   z-index: 5;
-  transition: width 0.25s ease, height 0.25s ease;
-}
-
-#viewfinder.aspect-standard {
-  width: 86%;
-  height: 52%;
-}
-#viewfinder.aspect-wide {
-  width: 90%;
-  height: 38%;
-}
-#viewfinder.aspect-tall {
-  width: 80%;
-  height: 66%;
 }
 
 /* Corner Brackets */
 .corner {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-color: #00ff88;
   border-style: solid;
 }
-.corner.top-left { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
-.corner.top-right { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
-.corner.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
-.corner.bottom-right { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
+.corner.top-left { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 14px; }
+.corner.top-right { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 14px; }
+.corner.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 14px; }
+.corner.bottom-right { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 14px; }
 
 /* Laser Scanning Line */
 .scan-laser {
@@ -150,36 +140,24 @@ body, html {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  box-shadow: 0 0 8px #00ff88;
-  opacity: 0.7;
-  animation: scanning 2s infinite ease-in-out;
+  box-shadow: 0 0 10px #00ff88;
+  opacity: 0.6;
+  animation: scanning 2.2s infinite ease-in-out;
 }
 
 @keyframes scanning {
   0% { top: 5%; opacity: 0.2; }
-  50% { top: 95%; opacity: 0.9; }
+  50% { top: 95%; opacity: 0.85; }
   100% { top: 5%; opacity: 0.2; }
-}
-
-.guide-text {
-  position: absolute;
-  bottom: -32px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Stability Progress Bar */
 #stability-bar-container {
   position: absolute;
-  bottom: 85px;
+  bottom: 78px;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
+  width: 220px;
   height: 6px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
@@ -209,53 +187,58 @@ body, html {
   border: none;
   font-size: 16px;
   font-weight: 800;
-  padding: 14px 24px;
+  padding: 16px 28px;
   border-radius: 30px;
   box-shadow: 0 0 25px rgba(0, 255, 136, 0.7);
   cursor: pointer;
   animation: pulseInstall 1.5s infinite;
+  touch-action: manipulation;
 }
 
 /* Status Pill */
 #status-pill {
   position: absolute;
-  bottom: 105px;
+  bottom: 95px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 6px 16px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 6px 18px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #00ff88;
   letter-spacing: 0.5px;
   z-index: 10;
-  border: 1px solid rgba(0, 255, 136, 0.35);
-  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  backdrop-filter: blur(6px);
   white-space: nowrap;
 }
 
 /* Manual Snap Button */
 #manual-snap-btn {
   position: absolute;
-  bottom: 22px;
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: #00ff88;
+  color: #000;
   border: 2px solid #fff;
-  font-size: 24px;
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  touch-action: manipulation;
   transition: transform 0.1s;
 }
 #manual-snap-btn:active {
-  transform: translateX(-50%) scale(0.92);
+  transform: translateX(-50%) scale(0.94);
 }
 
 /* HUGE ANSWER OVERLAY */
@@ -266,7 +249,7 @@ body, html {
   width: 100%;
   height: 100%;
   background: #000;
-  z-index: 100;
+  z-index: 150;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -323,7 +306,7 @@ body, html {
   display: flex;
   gap: 10px;
   margin-top: 25px;
-  z-index: 110;
+  z-index: 160;
 }
 
 .action-btn {
@@ -337,6 +320,7 @@ body, html {
   cursor: pointer;
   backdrop-filter: blur(6px);
   transition: all 0.15s ease;
+  touch-action: manipulation;
 }
 .action-btn:active {
   transform: scale(0.95);
@@ -427,6 +411,7 @@ body, html {
   color: #aaa;
   font-size: 18px;
   cursor: pointer;
+  padding: 4px 8px;
 }
 
 /* Detail Modal Specifics */
@@ -536,6 +521,7 @@ body, html {
   font-weight: 700;
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .btn.primary {
   background: #00ff88;

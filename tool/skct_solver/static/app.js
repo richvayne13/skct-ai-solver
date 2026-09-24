@@ -1,10 +1,9 @@
-// SKCT AI Auto Solver - Standalone Smartphone PWA App (Robust Edition v4)
+// SKCT AI Auto Solver - Fullscreen 100% & Smart Quota Guard v5
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("camera");
   const hiddenCanvas = document.getElementById("hidden-canvas");
   const statusPill = document.getElementById("status-pill");
   const stabilityBar = document.getElementById("stability-bar");
-  const viewfinder = document.getElementById("viewfinder");
   const startCamPrompt = document.getElementById("start-cam-prompt");
   const startCamBtn = document.getElementById("start-cam-btn");
   
@@ -33,13 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const sensitivitySlider = document.getElementById("sensitivity-slider");
   const sensitivityVal = document.getElementById("sensitivity-val");
 
-  const aspectBtn = document.getElementById("aspect-btn");
-  const aspectLabel = document.getElementById("aspect-label");
+  const modeToggleBtn = document.getElementById("mode-toggle-btn");
+  const modeLabel = document.getElementById("mode-label");
   const manualSnapBtn = document.getElementById("manual-snap-btn");
   const installAppBtn = document.getElementById("install-app-btn");
   const toast = document.getElementById("toast");
 
-  // Global Settings Controls for HTML onclick fallback
+  // Global Settings Controls
   window.openSettingsModal = function(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     settingsModal.classList.remove("hidden");
@@ -53,21 +52,20 @@ document.addEventListener("DOMContentLoaded", () => {
   let stream = null;
   let isAnalyzing = false;
   let isResultShowing = false;
+  let isCooldown = false;
+  let isAutoMode = localStorage.getItem("skct_mode") !== "manual"; // Default: true (Auto)
   let currentModel = localStorage.getItem("skct_model") || "gemini-2.0-flash";
-  let currentAspectIdx = 0; // 0: standard, 1: wide, 2: tall
-  const aspectClasses = ["aspect-standard", "aspect-wide", "aspect-tall"];
-  const aspectNames = ["표준", "가로형", "세로형"];
 
   let lastSolvedData = null;
   let wakeLock = null;
   let deferredInstallPrompt = null;
 
-  // Stability detection variables
+  // Stability detection variables (150ms intervals)
   const sampleWidth = 64;
   const sampleHeight = 48;
   let prevFrameData = null;
   let stableCount = 0;
-  const requiredStableChecks = 7; // ~1.0s (at 150ms intervals)
+  const requiredStableChecks = 9; // ~1.35s stillness required (prevents rapid firing)
   let sensitivityThreshold = 14;
   let stabilityInterval = null;
 
@@ -81,6 +79,32 @@ document.addEventListener("DOMContentLoaded", () => {
   updateSensitivityLabel(sensitivityThreshold);
 
   modelSelect.value = currentModel;
+  updateModeUI();
+
+  // Mode Toggle (Auto / Manual)
+  modeToggleBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    isAutoMode = !isAutoMode;
+    localStorage.setItem("skct_mode", isAutoMode ? "auto" : "manual");
+    updateModeUI();
+    showToast(isAutoMode ? "⚡ 자동 감지 모드: 1.3초 멈추면 풀이" : "📸 수동 셔터 모드: 셔터 버튼 누르면 풀이");
+  });
+
+  function updateModeUI() {
+    if (isAutoMode) {
+      modeLabel.textContent = "자동";
+      modeToggleBtn.style.color = "#00ff88";
+      modeToggleBtn.style.borderColor = "rgba(0, 255, 136, 0.4)";
+      manualSnapBtn.textContent = "📸 셔터 (수동)";
+    } else {
+      modeLabel.textContent = "수동";
+      modeToggleBtn.style.color = "#ffbb00";
+      modeToggleBtn.style.borderColor = "rgba(255, 187, 0, 0.5)";
+      manualSnapBtn.textContent = "📸 지금 풀기";
+      stabilityBar.style.width = "0%";
+      statusPill.textContent = "문제를 비추고 [📸 지금 풀기]를 누르세요";
+    }
+  }
 
   // PWA Install prompt handling
   window.addEventListener("beforeinstallprompt", (e) => {
@@ -104,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Keep screen on while using camera (WakeLock API)
+  // WakeLock: Keep screen on
   async function requestWakeLock() {
     try {
       if ("wakeLock" in navigator) {
@@ -125,17 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
     toast.classList.remove("hidden");
     toastTimer = setTimeout(() => {
       toast.classList.add("hidden");
-    }, 2200);
+    }, 2500);
   }
-
-  // Aspect ratio toggle
-  aspectBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    currentAspectIdx = (currentAspectIdx + 1) % 3;
-    viewfinder.className = aspectClasses[currentAspectIdx];
-    aspectLabel.textContent = aspectNames[currentAspectIdx];
-    showToast(`박스 비율: ${aspectNames[currentAspectIdx]}`);
-  });
 
   // Multi-tier Fallback Camera Initialization
   async function initCamera() {
@@ -166,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       statusPill.textContent = "⚠️ 카메라 미지원 브라우저";
-      alert("현재 브라우저에서는 카메라 접근이 지원되지 않습니다. Chrome 또는 Safari 브라우저에서 실행해주세요.");
+      alert("현재 브라우저에서는 카메라 접근이 지원되지 않습니다. Chrome 또는 Safari로 접속해주세요.");
       return;
     }
 
@@ -181,11 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
         video.setAttribute("autoplay", "true");
         await video.play();
 
-        // Camera started successfully
         if (startCamPrompt) startCamPrompt.classList.add("hidden");
         
         if (savedKey) {
-          statusPill.textContent = "문제를 박스 안에 맞추세요";
+          statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
         } else {
           statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
         }
@@ -201,7 +215,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (startCamPrompt) startCamPrompt.classList.remove("hidden");
   }
 
-  // Button to explicitly trigger camera permission
   if (startCamBtn) {
     startCamBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -209,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Start Stability Detection Loop
+  // Stability Detection Loop
   function startStabilityDetection() {
     if (stabilityInterval) clearInterval(stabilityInterval);
     
@@ -218,7 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = hiddenCanvas.getContext("2d", { willReadFrequently: true });
 
     stabilityInterval = setInterval(() => {
-      if (isAnalyzing || isResultShowing || !video.videoWidth) {
+      // Don't auto-capture if manual mode, cooldown, analyzing, result showing, or camera not ready
+      if (!isAutoMode || isCooldown || isAnalyzing || isResultShowing || !video.videoWidth) {
         return;
       }
 
@@ -259,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stableCount = 0;
         stabilityBar.style.width = "0%";
         if (localStorage.getItem("gemini_api_key")) {
-          statusPill.textContent = "문제를 비추고 멈추세요";
+          statusPill.textContent = "문제를 화면에 비추고 멈추세요";
         } else {
           statusPill.textContent = "⚙️ 우측 상단에서 API 키를 입력하세요";
         }
@@ -267,9 +281,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 150);
   }
 
-  // Trigger Automatic Image Capture & Direct AI Solve
+  // Trigger Image Capture & Direct AI Solve
   async function triggerCapture() {
-    if (isAnalyzing || isResultShowing) return;
+    if (isAnalyzing || isResultShowing || isCooldown) return;
     
     const apiKey = localStorage.getItem("gemini_api_key") || "";
     if (!apiKey) {
@@ -286,49 +300,70 @@ document.addEventListener("DOMContentLoaded", () => {
     if (navigator.vibrate) navigator.vibrate(50);
 
     try {
-      const base64Data = captureViewfinderImageOnlyData();
+      const base64Data = captureFullscreenImageOnlyData();
       const result = await solveWithGeminiDirect(base64Data, apiKey, currentModel);
       lastSolvedData = result;
       showAnswer(result);
     } catch (err) {
       console.error(err);
-      statusPill.textContent = "오류 발생! 1초 후 재시도";
-      alert("AI 풀이 오류: " + err.message);
+      
+      let userErrMsg = err.message || "";
+      if (userErrMsg.includes("quota") || userErrMsg.includes("429") || userErrMsg.includes("ResourceExhausted")) {
+        userErrMsg = "⏳ Google Gemini 무료 호출 한도(분당 15회)에 일시 도달했습니다.\n약 20초만 쉬었다가 다시 시도해 주세요.";
+      }
+      
+      statusPill.textContent = "⚠️ 풀이 중단 (2초 후 리셋)";
+      alert(userErrMsg);
+
+      // Start 4-second cooldown to protect rate limits
+      startCooldown(4000);
       setTimeout(() => {
         isAnalyzing = false;
-        statusPill.textContent = "문제를 비추고 멈추세요";
-      }, 1500);
+        resetToScan();
+      }, 2000);
     }
   }
 
-  // Crop viewfinder area
-  function captureViewfinderImageOnlyData() {
+  // Cooldown Manager (prevents API spamming)
+  function startCooldown(durationMs = 3000) {
+    isCooldown = true;
+    setTimeout(() => {
+      isCooldown = false;
+    }, durationMs);
+  }
+
+  // 100% Fullscreen Camera Capture (가로/세로 박스 잘림 없이 화면 전체 통째로 캡처)
+  function captureFullscreenImageOnlyData() {
     const videoW = video.videoWidth || 1280;
     const videoH = video.videoHeight || 720;
-    const containerW = video.clientWidth || window.innerWidth;
-    const containerH = video.clientHeight || window.innerHeight;
 
-    const vfRect = viewfinder.getBoundingClientRect();
+    // Optimal resizing (Max 1280px to save token quota and 2x speed)
+    const maxDim = 1280;
+    let targetW = videoW;
+    let targetH = videoH;
 
-    const scaleX = videoW / containerW;
-    const scaleY = videoH / containerH;
-
-    const cropX = Math.max(0, vfRect.left * scaleX);
-    const cropY = Math.max(0, vfRect.top * scaleY);
-    const cropW = Math.min(videoW - cropX, vfRect.width * scaleX);
-    const cropH = Math.min(videoH - cropY, vfRect.height * scaleY);
+    if (targetW > maxDim || targetH > maxDim) {
+      if (targetW >= targetH) {
+        targetH = Math.round((targetH * maxDim) / targetW);
+        targetW = maxDim;
+      } else {
+        targetW = Math.round((targetW * maxDim) / targetH);
+        targetH = maxDim;
+      }
+    }
 
     const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = cropW;
-    cropCanvas.height = cropH;
+    cropCanvas.width = targetW;
+    cropCanvas.height = targetH;
     const cropCtx = cropCanvas.getContext("2d");
 
-    cropCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-    const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.90);
+    // Capture entire frame 100%
+    cropCtx.drawImage(video, 0, 0, videoW, videoH, 0, 0, targetW, targetH);
+    const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.85);
     return dataUrl.split(",")[1];
   }
 
-  // Client-side Direct Call to Google Gemini REST API
+  // Client-side Direct Call to Google Gemini REST API with Fallback Rotation
   async function solveWithGeminiDirect(base64Image, apiKey, modelName) {
     const systemPrompt = `당신은 대한민국 최고 수준의 인적성(SKCT) 전 영역 초고속 실전 문제 풀이 전문가입니다.
 제공된 문제 이미지를 보는 즉시 스스로 문제의 영역(창의수리, 수열추리, 자료해석, 언어추리/명제, 언어이해 등)을 '자동 판별'하고, 해당 영역의 최적 공식을 적용하여 100% 신뢰도의 정답 번호와 핵심 근거를 도출하세요.
@@ -363,11 +398,16 @@ document.addEventListener("DOMContentLoaded", () => {
       ],
       generationConfig: {
         temperature: 0.0,
-        maxOutputTokens: 450
+        maxOutputTokens: 400
       }
     };
 
-    const modelsToTry = [modelName || "gemini-2.0-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+    // Priority model rotation (if 429 quota hits, automatically tries alternate model pool)
+    const modelsToTry = [
+      modelName || "gemini-2.0-flash",
+      "gemini-1.5-flash", // Separate quota bucket from 2.0!
+      "gemini-2.5-flash"
+    ];
     const uniqueModels = [...new Set(modelsToTry)];
     let lastError = null;
 
@@ -388,10 +428,17 @@ document.addEventListener("DOMContentLoaded", () => {
           return parsed;
         } else {
           const errData = await response.json().catch(() => ({}));
-          lastError = errData.error?.message || `HTTP ${response.status}`;
+          const errMsg = errData.error?.message || `HTTP ${response.status}`;
+          lastError = errMsg;
+          console.warn(`Model ${m} failed (${response.status}): ${errMsg}, trying next fallback...`);
+          // If it's not quota error (e.g. invalid API key), don't loop endlessly
+          if (response.status === 400 && errMsg.includes("API_KEY_INVALID")) {
+            throw new Error("유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 입력해주세요.");
+          }
         }
       } catch (e) {
         lastError = e.message;
+        if (e.message.includes("유효하지 않은 API 키")) throw e;
       }
     }
 
@@ -468,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // One-touch reset to scan next question
   function resetToScan() {
-    if (!isResultShowing) return;
+    if (!isResultShowing && !isAnalyzing) return;
     
     resultOverlay.className = "hidden";
     detailModal.classList.add("hidden");
@@ -476,7 +523,11 @@ document.addEventListener("DOMContentLoaded", () => {
     isAnalyzing = false;
     stableCount = 0;
     stabilityBar.style.width = "0%";
-    statusPill.textContent = "문제를 비추고 멈추세요";
+
+    // Start 2.5s cooldown after closing result to prevent accidental instant re-trigger
+    startCooldown(2500);
+
+    statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
 
     if (navigator.vibrate) navigator.vibrate(30);
   }
@@ -505,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resetToScan();
   });
 
-  // Manual snap button
+  // Manual snap button (Always functional)
   manualSnapBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!isAnalyzing && !isResultShowing) {
@@ -551,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("gemini_api_key", key);
       showToast("⚙️ API 키가 안전하게 저장되었습니다!");
       if (stream) {
-        statusPill.textContent = "문제를 박스 안에 맞추세요";
+        statusPill.textContent = isAutoMode ? "문제를 화면에 비추고 멈추세요" : "문제를 비추고 [📸 지금 풀기]를 누르세요";
       }
     }
 

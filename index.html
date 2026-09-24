@@ -18,19 +18,14 @@
 
   <!-- Force Cache Clear & Service Worker Unregister -->
   <script>
-    // Unregister any old service workers to break cache jail
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var i = 0; i < regs.length; i++) {
-          regs[i].unregister();
-        }
+        for (var i = 0; i < regs.length; i++) regs[i].unregister();
       });
     }
     if ('caches' in window) {
       caches.keys().then(function(names) {
-        for (var i = 0; i < names.length; i++) {
-          caches.delete(names[i]);
-        }
+        for (var i = 0; i < names.length; i++) caches.delete(names[i]);
       });
     }
 
@@ -45,7 +40,7 @@
     };
   </script>
 
-  <link rel="stylesheet" href="style.css?v=20260924_4">
+  <link rel="stylesheet" href="style.css?v=20260924_5">
 </head>
 <body>
   <div id="app">
@@ -57,14 +52,13 @@
       <video id="camera" autoplay playsinline muted></video>
       <canvas id="hidden-canvas" style="display: none;"></canvas>
 
-      <!-- Viewfinder Overlay -->
-      <div id="viewfinder" class="aspect-standard">
+      <!-- Fullscreen Neon Target Frame (전체화면 풀 프레임) -->
+      <div id="fullscreen-frame">
         <div class="corner top-left"></div>
         <div class="corner top-right"></div>
         <div class="corner bottom-left"></div>
         <div class="corner bottom-right"></div>
         <div class="scan-laser"></div>
-        <div class="guide-text">문제를 박스 안에 맞추고 1초간 멈추세요</div>
       </div>
 
       <!-- Stability Progress Bar -->
@@ -73,9 +67,9 @@
       </div>
 
       <!-- Status Indicator -->
-      <div id="status-pill">📷 카메라 시작 중...</div>
+      <div id="status-pill">📷 카메라 준비 중...</div>
 
-      <!-- Camera Start Touch Overlay (Shows if browser blocks autoplay) -->
+      <!-- Camera Start Touch Overlay -->
       <div id="start-cam-prompt" class="start-cam-prompt hidden">
         <button id="start-cam-btn" class="start-cam-btn">📷 카메라 켜기 (터치)</button>
       </div>
@@ -85,13 +79,13 @@
         <div class="logo">⚡ SKCT AI</div>
         <div class="top-actions">
           <button id="install-app-btn" class="icon-btn install hidden" title="홈 화면에 앱 설치">📲 앱 설치</button>
-          <button id="aspect-btn" class="icon-btn" title="박스 비율 변경">📐 <span id="aspect-label">표준</span></button>
+          <button id="mode-toggle-btn" class="icon-btn" title="자동/수동 캡처 전환">⚡ <span id="mode-label">자동</span></button>
           <button id="settings-btn" class="icon-btn" title="설정" onclick="window.openSettingsModal && window.openSettingsModal(event)">⚙️</button>
         </div>
       </div>
 
-      <!-- Manual capture button -->
-      <button id="manual-snap-btn" title="터치로 즉시 캡처">📸</button>
+      <!-- Manual capture button (수동 캡처 / 즉시 캡처) -->
+      <button id="manual-snap-btn" title="터치로 즉시 문제 풀기">📸 셔터</button>
     </div>
 
     <!-- Huge Answer Overlay -->
@@ -105,7 +99,7 @@
           <button id="view-detail-btn" class="action-btn">📖 상세 풀이 보기</button>
         </div>
 
-        <div class="touch-hint">👉 화면 아무 곳이나 터치하면 다음 문제</div>
+        <div class="touch-hint">👉 화면 아무 곳이나 터치하면 다음 문제 리셋</div>
       </div>
     </div>
 
@@ -154,8 +148,8 @@
           <label for="model-select">AI 추론 엔진</label>
           <select id="model-select" class="form-select">
             <option value="gemini-2.0-flash" selected>gemini-2.0-flash (초고속 실전 모드 - 추천)</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash (안정적 쿼터 모드)</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash (추론 고도화 모드)</option>
-            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 모드)</option>
           </select>
         </div>
         <div class="form-group">
@@ -173,6 +167,6 @@
     <div id="toast" class="toast hidden"></div>
   </div>
 
-  <script src="app.js?v=20260924_4"></script>
+  <script src="app.js?v=20260924_5"></script>
 </body>
 </html>
